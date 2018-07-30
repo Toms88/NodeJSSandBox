@@ -1,13 +1,26 @@
 'use strict';
 
-
-require('./lib/variables')();
-require('./lib/server.js')();
+var ioClientEvents = require('./io/io.client.events');
+var serverInstance = require('./lib/instance.js');
 
 
 //handling client connection through socket.io process
-io.on('connection', client => {
+if (serverInstance.IO_INCLUDED) {
+    if (isArray(ioClientEvents)) {
+        ioClientEvents.map((el) => {
+            if (isObject(el) && ('eventName' in el) && ('eventHandler' in el) &&
+                isString(el.eventName) && isFunction(el.eventHandler)) {
+                serverInstance.addClientEvents(el.eventName, el.eventHandler);
+            }
+        });
+    }
+    serverInstance.io.on('connection', client => {
+        serverInstance.initClient(client).then(isInitialized => {
+            if (isBoolean(isInitialized) && isInitialized) {
+                log('client initialized');
+            }
+        });
+    });
+}
 
-});
-
-server.listen(8080);
+serverInstance.init(8080);
